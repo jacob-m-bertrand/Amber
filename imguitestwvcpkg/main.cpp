@@ -1,6 +1,21 @@
 // C++
 #include <string>
 #include <iostream>
+#include <map>
+#include <vector>
+#include <sstream>
+#include <algorithm>
+#include <fstream>
+#include <unordered_map>
+#include <regex>
+#include <unordered_set>
+
+using namespace std;
+
+// Classes
+#include "SettingsProfile.h"
+/*#include "C:\Users\jacob\Desktop\NationStates\TargetFinder\TargetFinder\Region.h"
+#include "List.h"*/
 
 // GLFW
 #include <glad/glad.h>
@@ -10,11 +25,19 @@
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
-//#include <imgui_impl_opengl3.cpp>
 #include <imgui_impl_glfw.h>
 
-using namespace std;
+namespace ImGui {
+	// ImGui::InputText() with std::string
+	// Because text input needs dynamic resizing, we need to setup a callback to grow the capacity
+	IMGUI_API bool  InputText(const char* label, std::string* str, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = NULL, void* user_data = NULL);
+	IMGUI_API bool  InputTextMultiline(const char* label, std::string* str, const ImVec2& size = ImVec2(0, 0), ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = NULL, void* user_data = NULL);
+	IMGUI_API bool  InputTextWithHint(const char* label, const char* hint, std::string* str, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = NULL, void* user_data = NULL);
+}
 using namespace ImGui;
+
+
+int main(int argc, char* argv[]);
 
 void error_callback(int error, const char* description);
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
@@ -40,7 +63,7 @@ int main(int argc, char* argv[]) {
 	// Create window
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-	const float windowWidth = 2640, windowHeight = 2480, settingsWidth = 800;
+	const float windowWidth = 2640, windowHeight = 2000, settingsWidth = 1200, listWidth = 1200;
 	const ImVec2 settingSpace = ImVec2(0.0f, 20.0f);
 	GLFWwindow* window = glfwCreateWindow(windowWidth, windowHeight, "Amber Alpha", NULL, NULL);
 	if (!window) {
@@ -64,28 +87,27 @@ int main(int argc, char* argv[]) {
 
 	double time = glfwGetTime();
 
+	
 	bool* open = new bool(true);
-	bool* tagged = new bool(false);
-	bool* passworded = new bool(false);
-	int* endos = new int();
-	bool* execDel = new bool(true);
-	bool* founder = new bool(false);
-	int* numTeams = new int();
-	int* trigPop = new int();
-	bool* trigPass = new bool(false);
-	bool* birbFind = new bool(false);
-	bool* findTrig = new bool(true);
-
-	bool oTagged = *tagged;
-	bool oPassed = *passworded;
-	int oEndos = *endos;
-	bool oExecDel = *execDel;
-	bool oFounder = *founder;
-	int oNumTeams = *numTeams;
-	int oTrigPop = *trigPop;
-	bool oTrigPass = *trigPass;
-	bool oBirbFind = *birbFind;
-	bool oFindTrig = *findTrig;
+	
+	
+	SettingsProfile<int> ints;
+	SettingsProfile<bool> bools;
+	
+	bools.setSetting(TAGGED, new bool(false));
+	bools.setSetting(PASSWORDED, new bool(false));
+	ints.setSetting(ENDOS, new int());
+	bools.setSetting(EXEC_DEL, new bool(true));
+	bools.setSetting(FOUNDER, new bool(false));
+	ints.setSetting(NUM_TEAMS, new int());
+	ints.setSetting(TRIG_POP, new int());
+	bools.setSetting(TRIG_PASS, new bool(false));
+	bools.setSetting(BIRB_FIND_ENABLED, new bool(false));
+	bools.setSetting(FIND_TRIG, new bool(true));
+	ints.setSetting(TRIGGER, new int());
+	ints.setSetting(SEPARATION, new int());
+	string* input = new string();
+	string* output = new string();
 
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
@@ -97,63 +119,73 @@ int main(int argc, char* argv[]) {
 		ImGui_ImplGlfw_NewFrame();
 		NewFrame();
 
-		// render gui
-		bool oTagged = *tagged;
-		bool oPassed = *passworded;
-		int oEndos = *endos;
-		bool oExecDel = *execDel;
-		bool oFounder = *founder;
-		int oNumTeams = *numTeams;
-		int oTrigPop = *trigPop;
-		bool oTrigPass = *trigPass;
-		bool oBirbFind = *birbFind;
-		bool oFindTrig = *findTrig;
 
-		io.DisplaySize = ImVec2(settingsWidth, windowHeight - 100);
-		Begin("Operation Settings", open);
+		//io.DisplaySize = ImVec2(settingsWidth, windowHeight - 100);
+		SetNextWindowSize({ settingsWidth, windowHeight - 100 });
+		SetNextWindowPos({ 50, 50 });
+		Begin("Operation Settings", open, ImGuiWindowFlags_NoMove);
+			Checkbox("Regions Should be Tagged", bools[TAGGED]);
+			Dummy(settingSpace);
 
-		Checkbox("Regions Should be Tagged", tagged);
-		if(oTagged != *tagged) cout << "Variable tagged set to " << *tagged << endl; 
-		Dummy(settingSpace);
+			Checkbox("Regions Should be Passworded", bools[PASSWORDED]);
+			Dummy(settingSpace);
 
-		Checkbox("Regions Should be Passworded", passworded);
-		if (oPassed != *passworded) cout << "Variable passworded set to " << *passworded << endl;
-		Dummy(settingSpace);
+			Checkbox("Regions Should Have Executive Delegates", bools[EXEC_DEL]);
+			Dummy(settingSpace);
 
-		Checkbox("Regions Should Have Executive Delegates", execDel);
-		if (oExecDel != *execDel) cout << "Variable execDel set to " << *execDel << endl;
-		Dummy(settingSpace);
+			Checkbox("Regions Should Have a Founder", bools[FOUNDER]);
+			Dummy(settingSpace);
 
-		Checkbox("Regions Should Have a Founder", founder);
-		if (oFounder != *founder) cout << "Variable founder set to " << *founder << endl;
-		Dummy(settingSpace);
+			Checkbox("Amber Should Find Trigger Regions", bools[FIND_TRIG]);
+			Dummy(settingSpace);
 
-		Checkbox("Amber Should Find Trigger Regions", findTrig);
-		if (oFindTrig != *findTrig) cout << "Variable findTrig set to " << *findTrig << endl;
-		Dummy(settingSpace);
+			Checkbox("Trigger Regions Should be Passworded", bools[PASSWORDED]);
+			Dummy(settingSpace);
 
-		Checkbox("Trigger Regions Should be Passworded", passworded);
-		if (oTrigPass != *trigPass) cout << "Variable trigPass set to " << *trigPass << endl;
-		Dummy(settingSpace);
+			Checkbox("Enable Birb AutoFind", bools[BIRB_FIND_ENABLED]);
+			Dummy(settingSpace);
 
-		Checkbox("Enable Birb AutoFind", birbFind);
-		if (oBirbFind != *birbFind) cout << "Variable birbFine set to " << *birbFind << endl;
-		Dummy(settingSpace);
+			PushItemWidth(settingsWidth / 4);
 
-		PushItemWidth(settingsWidth / 4);
-		InputInt("Number of Endorsements", endos, 1, 5);
-		if (oEndos != *endos) cout << "Variable endos set to " << *endos << endl;
-		Dummy(settingSpace);
+			InputInt("Number of Endorsements", ints[ENDOS], 1, 5);
+			Dummy(settingSpace);
 
-		InputInt("Number of Teams", numTeams, 1, 5);
-		if (oNumTeams != *numTeams) cout << "Variable numTeams set to " << *numTeams << endl;
-		Dummy(settingSpace);
+			InputInt("Number of Teams", ints[NUM_TEAMS], 1, 5);
+			Dummy(settingSpace);
 
-		InputInt("Maximum Trigger Region Population", trigPop, 1, 5);
-		if (oTrigPop != *trigPop) cout << "Variable trigPop set to " << *trigPop << endl;
-		Dummy(settingSpace);
+			InputInt("Maximum Trigger Region Population", ints[TRIG_POP], 1, 5);
+			Dummy(settingSpace);
 
-		PopItemWidth();
+			InputInt("Maximum Trigger Region Population", ints[TRIGGER], 1, 5);
+			Dummy(settingSpace);
+
+			InputInt("Maximum Trigger Region Population", ints[SEPARATION], 1, 5);
+			Dummy(settingSpace);
+
+			if (Button("Start Target Finding")) {
+				cout << "Whoa its go time" << endl;
+			}
+
+			PopItemWidth();
+		End();
+
+		SetNextWindowSize({ listWidth, (windowHeight - 100) / 2 });
+		SetNextWindowPos({ windowWidth - 50 - listWidth, 50 });
+		Begin("Input", open);
+			PushItemWidth(settingsWidth);
+		
+			InputTextMultiline("", input, {settingsWidth, (windowHeight - 230) / 2 });
+			cout << *input << endl;
+			PopItemWidth();
+		End();
+
+		SetNextWindowSize({ listWidth, ((windowHeight - 100) / 2) });
+		SetNextWindowPos({ windowWidth - 50 - listWidth, ((windowHeight - 100) / 2) + 100});
+		Begin("List", open);
+			PushItemWidth(settingsWidth);
+			InputTextMultiline("", input, { settingsWidth, (windowHeight - 230) / 2 });
+			cout << *input << endl;
+			PopItemWidth();
 		End();
 
 		// render imgui
