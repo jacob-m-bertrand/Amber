@@ -9,13 +9,10 @@
 #include <unordered_map>
 #include <regex>
 #include <unordered_set>
+#include <time.h>
+#include <urlmon.h>
 
 using namespace std;
-
-// Classes
-#include "SettingsProfile.h"
-/*#include "C:\Users\jacob\Desktop\NationStates\TargetFinder\TargetFinder\Region.h"
-#include "List.h"*/
 
 // GLFW
 #include <glad/glad.h>
@@ -36,11 +33,28 @@ namespace ImGui {
 }
 using namespace ImGui;
 
+// other
+#pragma comment(lib, "Urlmon.lib")
+
+// Boost
+#include <boost/iostreams/filtering_streambuf.hpp>
+#include <boost/iostreams/copy.hpp>
+#include <boost/iostreams/filter/gzip.hpp>
+
+// Pugixml
+#include <pugixml.hpp>
+
+// Classes
+#include "SettingsProfile.h"
+#include "C:\Users\jacob\Desktop\NationStates\TargetFinder\TargetFinder\Region.h"
+#include "List.h"
 
 int main(int argc, char* argv[]);
 
 void error_callback(int error, const char* description);
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+
+void unzip();
 
 int main(int argc, char* argv[]) {
 	// Initialize glfw
@@ -94,20 +108,27 @@ int main(int argc, char* argv[]) {
 	SettingsProfile<int> ints;
 	SettingsProfile<bool> bools;
 	
-	bools.setSetting(TAGGED, new bool(false));
+	bools.setSetting(DETAGS, new bool(true));
 	bools.setSetting(PASSWORDED, new bool(false));
-	ints.setSetting(ENDOS, new int());
+	ints.setSetting(ENDOS, new int(2));
 	bools.setSetting(EXEC_DEL, new bool(true));
 	bools.setSetting(FOUNDER, new bool(false));
-	ints.setSetting(NUM_TEAMS, new int());
-	ints.setSetting(TRIG_POP, new int());
+	ints.setSetting(NUM_TEAMS, new int(1));
+	ints.setSetting(TRIG_POP, new int(40));
 	bools.setSetting(TRIG_PASS, new bool(false));
 	bools.setSetting(BIRB_FIND_ENABLED, new bool(false));
 	bools.setSetting(FIND_TRIG, new bool(true));
-	ints.setSetting(TRIGGER, new int());
-	ints.setSetting(SEPARATION, new int());
+	ints.setSetting(TRIGGER, new int(10));
+	ints.setSetting(SEPARATION, new int(60));
+	ints.setSetting(NUM_TARGETS, new int(50));
+	ints.setSetting(DELAY, new int(60));
+	bools.setSetting(CRAZY_TAGGING, new bool(false));
 	string* input = new string();
 	string* output = new string();
+
+	// Set up advanced tag checking
+	URLDownloadToFile(NULL, L"https://www.nationstates.net/pages/regions.xml.gz", L"regions.xml.gz", 0, NULL);
+	unzip();
 
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
@@ -124,7 +145,10 @@ int main(int argc, char* argv[]) {
 		SetNextWindowSize({ settingsWidth, windowHeight - 100 });
 		SetNextWindowPos({ 50, 50 });
 		Begin("Operation Settings", open, ImGuiWindowFlags_NoMove);
-			Checkbox("Regions Should be Tagged", bools[TAGGED]);
+			Checkbox("Doing Detags", bools[DETAGS]);
+			Dummy(settingSpace);
+
+			Checkbox("Enable Crazy Tagging Mode", bools[CRAZY_TAGGING]);
 			Dummy(settingSpace);
 
 			Checkbox("Regions Should be Passworded", bools[PASSWORDED]);
@@ -156,14 +180,26 @@ int main(int argc, char* argv[]) {
 			InputInt("Maximum Trigger Region Population", ints[TRIG_POP], 1, 5);
 			Dummy(settingSpace);
 
-			InputInt("Maximum Trigger Region Population", ints[TRIGGER], 1, 5);
+			InputInt("Trigger Time", ints[TRIGGER], 1, 500);
 			Dummy(settingSpace);
 
-			InputInt("Maximum Trigger Region Population", ints[SEPARATION], 1, 5);
+			InputInt("Separation Time", ints[SEPARATION], 1, 500);
+			Dummy(settingSpace);
+
+			InputInt("Number of Targets", ints[NUM_TARGETS], 1, 500);
+			Dummy(settingSpace);
+
+			InputInt("Delay Time", ints[DELAY], 1, 500);
 			Dummy(settingSpace);
 
 			if (Button("Start Target Finding")) {
-				cout << "Whoa its go time" << endl;
+				List list(input, ints, bools);
+				cout << "Making list" << endl;
+				list.advancedTagChecking();
+				list.makeList();
+
+				cout << "Done." << endl;
+				output = list.getList();
 			}
 
 			PopItemWidth();
@@ -175,7 +211,6 @@ int main(int argc, char* argv[]) {
 			PushItemWidth(settingsWidth);
 		
 			InputTextMultiline("", input, {settingsWidth, (windowHeight - 230) / 2 });
-			cout << *input << endl;
 			PopItemWidth();
 		End();
 
@@ -183,8 +218,7 @@ int main(int argc, char* argv[]) {
 		SetNextWindowPos({ windowWidth - 50 - listWidth, ((windowHeight - 100) / 2) + 100});
 		Begin("List", open);
 			PushItemWidth(settingsWidth);
-			InputTextMultiline("", input, { settingsWidth, (windowHeight - 230) / 2 });
-			cout << *input << endl;
+			InputTextMultiline("", output, { settingsWidth, (windowHeight - 230) / 2 });
 			PopItemWidth();
 		End();
 
@@ -213,4 +247,26 @@ void error_callback(int error, const char* description) { cout << "Error " << er
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GLFW_TRUE);
+}
+
+
+void unzip() {
+	//Read from the first command line argument, assume it's gzipped
+	ifstream file("regions.xml.gz", ios_base::in | ios_base::binary);
+
+	boost::iostreams::filtering_streambuf<boost::iostreams::input> inbuf;
+
+	inbuf.push(boost::iostreams::gzip_decompressor());
+	inbuf.push(file);
+
+	//Convert streambuf to istream
+	istream instream(&inbuf);
+
+	ofstream fout("regions.xml");
+
+	//Copy everything from instream to 
+	fout << instream.rdbuf();
+
+	//Cleanup
+	file.close();
 }

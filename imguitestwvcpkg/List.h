@@ -3,27 +3,35 @@
 
 class List {
 public:
-	List(string iS, SettingsProfile<int>& intS, SettingsProfile<bool>& bS) : inputString(iS), intSettings(intS), boolSettings(bS) {
-		toMatch = regex("(.*)\\t(\\d\\d):(\\d\\d):(\\d\\d)\\t(\\d\\d):(\\d\\d):(\\d\\d)\\t(\\d+)\\t(\\d+)\\t(Founder|No|Password)\\t(Y|N)\\t(Y|N)\\t(.*)");
+	List(string* iS, SettingsProfile<int>& intS, SettingsProfile<bool>& bS) : inputString(iS), intSettings(intS), boolSettings(bS) {
 		regions.rehash(200);
+		createMap();
 	}
 
-	void createMap(ifstream);
+	void createMap();
 	void makeList();
-	string getList();
+	string* getList();
 	short int getTime(string, string, string);
 	short int str2num(string);
 	string getLongTime(short int);
 	unordered_map<short int, unordered_set<Region*>>& getMap() { return regions; }
+	bool inMap(short int time);
+	bool isGoodTrigger(Region*);
+	bool isGoodTarget(Region*);
+	Region* findTarget(short int&);
+	Region* findTrigger(short int);
+	Region* findLayeredThorn(short int&);
+	void advancedTagChecking();
 
 private:
 	unordered_map<short int, unordered_set<Region*>> regions;
-	regex toMatch;
-	string list;
-	string inputString;
+	unordered_map<string, Region*> regionsByName;
+	string* list;
+	string* inputString;
 	SettingsProfile<int> intSettings;
 	SettingsProfile<bool> boolSettings;
-
+	unordered_set<Region*> seen;
+	int lastTargetTime;
 };
 
 #endif
