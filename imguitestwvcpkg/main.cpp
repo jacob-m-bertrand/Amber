@@ -73,7 +73,13 @@ int main(int argc, char* argv[]) {
 	IMGUI_CHECKVERSION();
 	CreateContext();
 	ImGuiIO& io = GetIO();
-	io.Fonts->AddFontFromFileTTF("arial.ttf", 18);
+
+	int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+	int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+
+	//io.Fonts->AddFontFromFileTTF("arial.ttf", 18);
+	if (screenWidth < 3800) io.Fonts->AddFontFromFileTTF("arial.ttf", 18);
+	else io.Fonts->AddFontFromFileTTF("arial.ttf", 36);
 
 	// Create window
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
@@ -84,8 +90,6 @@ int main(int argc, char* argv[]) {
 
 	int* currentWinWidth = new int(0);
 	int* currentWinHeight = new int(0);
-	int screenWidth = GetSystemMetrics(SM_CXSCREEN);
-	int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 	float settingsWidth, settingsHeight, inputWidth, inputHeight, outputWidth, outputHeight;
 	float windowWidth = screenWidth / 2;
 	float windowHeight = screenHeight / 2;
