@@ -46,13 +46,14 @@ using namespace ImGui;
 
 // Classes
 #include "SettingsProfile.h"
-#include "C:\Users\jacob\Desktop\NationStates\TargetFinder\TargetFinder\Region.h"
+#include "Region.h"
 #include "List.h"
 
 int main(int argc, char* argv[]);
 
 void error_callback(int error, const char* description);
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+void ToggleButton(const char* str_id, bool* v);
 
 void unzip();
 
@@ -72,14 +73,25 @@ int main(int argc, char* argv[]) {
 	IMGUI_CHECKVERSION();
 	CreateContext();
 	ImGuiIO& io = GetIO();
-	ImFont* arial = io.Fonts->AddFontFromFileTTF("arial.ttf", 40);
+	io.Fonts->AddFontFromFileTTF("arial.ttf", 18);
 
 	// Create window
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-	const float windowWidth = 2640, windowHeight = 2000, settingsWidth = 1200, listWidth = 1200;
-	const ImVec2 settingSpace = ImVec2(0.0f, 20.0f);
-	GLFWwindow* window = glfwCreateWindow(windowWidth, windowHeight, "Amber Alpha", NULL, NULL);
+
+	const float margin = 10;
+	const float middleSpacing = 10;
+
+	int* currentWinWidth = new int(0);
+	int* currentWinHeight = new int(0);
+	int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+	int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+	float settingsWidth, settingsHeight, inputWidth, inputHeight, outputWidth, outputHeight;
+	float windowWidth = screenWidth / 2;
+	float windowHeight = screenHeight / 2;
+
+	const ImVec2 settingSpace = ImVec2(0.0f, 10.0f);
+	GLFWwindow* window = glfwCreateWindow(windowWidth, windowHeight, "Amber Beta", NULL, NULL);
 	if (!window) {
 		cout << "Window Open Failure!" << endl;
 		return 0;
@@ -95,7 +107,7 @@ int main(int argc, char* argv[]) {
 	ImGui_ImplOpenGL3_Init();
 
 	// Setup ImGui style
-	StyleColorsDark();
+	StyleColorsLight();
 
 	int width, height;
 
@@ -123,8 +135,12 @@ int main(int argc, char* argv[]) {
 	ints.setSetting(NUM_TARGETS, new int(50));
 	ints.setSetting(DELAY, new int(60));
 	bools.setSetting(CRAZY_TAGGING, new bool(false));
+	bools.setSetting(MAJOR, new bool(true));
+	bools.setSetting(MINOR, new bool(false));
 	string* input = new string();
 	string* output = new string();
+	bool* infoOn = new bool(false);
+	string oldInput;
 
 	// Set up advanced tag checking
 	URLDownloadToFile(NULL, L"https://www.nationstates.net/pages/regions.xml.gz", L"regions.xml.gz", 0, NULL);
@@ -132,7 +148,7 @@ int main(int argc, char* argv[]) {
 
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
-		glClearColor(.45f, .55f, .6f, 1.00f);
+		glClearColor(.984f, .589f, .015f, 1.00f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		// start new imgui frame
@@ -141,9 +157,19 @@ int main(int argc, char* argv[]) {
 		NewFrame();
 
 
-		//io.DisplaySize = ImVec2(settingsWidth, windowHeight - 100);
-		SetNextWindowSize({ settingsWidth, windowHeight - 100 });
-		SetNextWindowPos({ 50, 50 });
+		glfwGetWindowSize(window, currentWinWidth, currentWinHeight);
+		windowWidth = *currentWinWidth;
+		windowHeight = *currentWinHeight;
+		settingsWidth = (windowWidth / 2) - margin - middleSpacing;
+		settingsHeight = windowHeight - (2 * margin);
+		inputWidth = settingsWidth;
+		inputHeight = (windowHeight / 2) - margin - middleSpacing;
+		outputWidth = settingsWidth;
+		outputHeight = (windowHeight / 2) - margin - middleSpacing;
+
+
+		SetNextWindowSize({ settingsWidth, settingsHeight });
+		SetNextWindowPos({ margin, margin });
 		Begin("Operation Settings", open, ImGuiWindowFlags_NoMove);
 			Checkbox("Doing Detags", bools[DETAGS]);
 			Dummy(settingSpace);
@@ -167,6 +193,13 @@ int main(int argc, char* argv[]) {
 			Dummy(settingSpace);
 
 			Checkbox("Enable Birb AutoFind", bools[BIRB_FIND_ENABLED]);
+			Dummy(settingSpace);
+
+			Checkbox("Major", bools[MAJOR]);
+			if (*bools[MAJOR]) *bools[MINOR] = false;
+
+			Checkbox("Minor", bools[MINOR]);
+			if (*bools[MINOR]) *bools[MAJOR] = false;
 			Dummy(settingSpace);
 
 			PushItemWidth(settingsWidth / 4);
@@ -197,28 +230,42 @@ int main(int argc, char* argv[]) {
 				cout << "Making list" << endl;
 				list.advancedTagChecking();
 				list.makeList();
-
 				cout << "Done." << endl;
 				output = list.getList();
+			}
+
+			Dummy(settingSpace);
+			Dummy(settingSpace);
+			bool oldInfoOn = *infoOn;
+			Checkbox("Show Information Window", infoOn);
+			if (oldInfoOn != *infoOn) *input = "";
+			if (*infoOn) {
+				oldInput = *input;
+				*input = "This is Amber, the North Pacific Army's tool for list generation. It was made by BMWSurfer in 2021 at the";
+				*input += " request of Nimarya, then Minister of Defense.\n\nTo your left are a series of options, and in this box is";
+				*input += " (usually) where you paste in a spyglass list. To do this, select all the columns with data, copy them, ";
+				*input += "then paste them in the box. Below this box is where the list will output.\n\nIf you have any problems, ";
+				*input += "please notify BMWSurfer at bmwsurferns@gmail.com or on discord.\n\n\n\n Version b1.0.0";
 			}
 
 			PopItemWidth();
 		End();
 
-		SetNextWindowSize({ listWidth, (windowHeight - 100) / 2 });
-		SetNextWindowPos({ windowWidth - 50 - listWidth, 50 });
-		Begin("Input", open);
-			PushItemWidth(settingsWidth);
+		SetNextWindowSize({ inputWidth, inputHeight });
+		SetNextWindowPos({ windowWidth - margin - inputWidth, margin });
+		Begin(((*infoOn) ? "Information" : "Input"), open);
+			PushItemWidth(inputWidth);
 		
-			InputTextMultiline("", input, {settingsWidth, (windowHeight - 230) / 2 });
+			if(*infoOn) TextWrapped(input->c_str());
+			else InputTextMultiline("", input, { inputWidth, inputHeight });
 			PopItemWidth();
 		End();
 
-		SetNextWindowSize({ listWidth, ((windowHeight - 100) / 2) });
-		SetNextWindowPos({ windowWidth - 50 - listWidth, ((windowHeight - 100) / 2) + 100});
+		SetNextWindowSize({ outputWidth, outputHeight });
+		SetNextWindowPos({ windowWidth - outputWidth - margin, windowHeight - margin - outputHeight});
 		Begin("List", open);
-			PushItemWidth(settingsWidth);
-			InputTextMultiline("", output, { settingsWidth, (windowHeight - 230) / 2 });
+			PushItemWidth(outputWidth);
+			InputTextMultiline("", output, { outputWidth, outputHeight });
 			PopItemWidth();
 		End();
 
@@ -269,4 +316,25 @@ void unzip() {
 
 	//Cleanup
 	file.close();
+}
+
+void ToggleButton(const char* str_id, bool* v)
+{
+	ImVec2 p = ImGui::GetCursorScreenPos();
+	ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+	float height = ImGui::GetFrameHeight();
+	float width = height * 1.55f;
+	float radius = height * 0.50f;
+
+	if (ImGui::InvisibleButton(str_id, ImVec2(width, height)))
+		*v = !*v;
+	ImU32 col_bg;
+	if (ImGui::IsItemHovered())
+		col_bg = *v ? IM_COL32(145 + 20, 211, 68 + 20, 255) : IM_COL32(218 - 20, 218 - 20, 218 - 20, 255);
+	else
+		col_bg = *v ? IM_COL32(145, 211, 68, 255) : IM_COL32(218, 218, 218, 255);
+
+	draw_list->AddRectFilled(p, ImVec2(p.x + width, p.y + height), col_bg, height * 0.5f);
+	draw_list->AddCircleFilled(ImVec2(*v ? (p.x + width - radius) : (p.x + radius), p.y + radius), radius - 1.5f, IM_COL32(255, 255, 255, 255));
 }

@@ -26,10 +26,10 @@
     <ClInclude Include="SettingsProfile.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\Desktop\NationStates\TargetFinder\TargetFinder\Region.h">
+    <ClInclude Include="List.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="List.h">
+    <ClInclude Include="Region.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

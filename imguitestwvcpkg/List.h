@@ -6,9 +6,11 @@ public:
 	List(string* iS, SettingsProfile<int>& intS, SettingsProfile<bool>& bS) : inputString(iS), intSettings(intS), boolSettings(bS) {
 		regions.rehash(200);
 		createMap();
+		createFactbookChecks();
 	}
 
 	void createMap();
+	void createFactbookChecks();
 	void makeList();
 	string* getList();
 	short int getTime(string, string, string);
@@ -32,6 +34,7 @@ private:
 	SettingsProfile<bool> boolSettings;
 	unordered_set<Region*> seen;
 	int lastTargetTime;
+	vector<string> factbookChecks;
 };
 
 #endif

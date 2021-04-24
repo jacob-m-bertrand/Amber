@@ -143,8 +143,8 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\..\Desktop\NationStates\TargetFinder\TargetFinder\Region.h" />
     <ClInclude Include="List.h" />
+    <ClInclude Include="Region.h" />
     <ClInclude Include="SettingsProfile.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
