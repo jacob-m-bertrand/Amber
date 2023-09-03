@@ -2,6 +2,9 @@
 Amber is a state-of-the-art <a href='nationstates.net'>NationStates</a> military data tool, allowing militaries to easily create customizable target lists. Amber was commissioned by The North Pacific Army in 2021 at the request of their then Minister of Defense.
 
 NationStates is an online political simulator, more information about it's military gameplay can be found <a href='https://www.nationstates.net/page=dispatch/id=1007926'>here.</a>
+
+This repo contains Amber's code. For the .exe and other files, click here <a href='https://drive.google.com/file/d/1_d-W_M068M-4VlLSuQFirSd4HYIYQD_l/view?usp=drive_link'>here.</a>
+
 # Settings
 Most settings should be self-explanatory, however some are not. Below is a list of the non-obvious settings and what they do.
 
